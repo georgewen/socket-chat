@@ -18,7 +18,6 @@ def handle_client(client, address):
     # first message must be LOGIN
     # reading incoming message after received a COMPOSE command
     global messages
-    loggedin = False
     receiving = False
     currentUser = None
     toUser = None
@@ -29,51 +28,45 @@ def handle_client(client, address):
                 break
             print(f"Received from {address}: {message}")
             #if not loggedin and message.start
-            if not loggedin:
-                if not message.startswith("LOGIN"):
-                    print("error1")
-                    break
+            if currentUser is None:
+                if  message.startswith("LOGIN") and len(message.split()) == 2:
+                    currentUser = message.split()[1]
+                    msg = str(len(messages[currentUser]))
+                    client.send(msg.encode('ascii'))
                 else:
-                    if len(message.split()) == 2:
-                        currentUser = message.split()[1]
-                        loggedin = True
-                        msg = str(len(messages[currentUser]))
-                        client.send(msg.encode('ascii'))
-                        continue
+                    print("error1")
+                    break   
+            else:
+                if receiving:
+                    messages[toUser].append({'from': currentUser, 'message': message})
+                    receiving = False
+                    response = "MESSAGE SENT"
+                    client.send(response.encode('ascii'))
+                else:
+                    # READ or COMPOSE
+                    if message.startswith("READ"):
+                        if len(messages[currentUser]) > 0 :
+                            response = messages[currentUser].pop()
+                            user = response['from'] + "\n"
+                            client.send(user.encode('ascii'))
+                            msg = response['message']
+                            client.send(msg.encode('ascii'))
+                        else:
+                            msg = "READ ERROR"
+                            client.send(msg.encode('ascii'))                        
+                    elif message.startswith("COMPOSE") and len(message.split()) == 2:
+                        toUser = message.split()[1]
+                        receiving = True
+                    elif message == "EXIT":
+                        print("Exit")
+                        break                   
                     else:
                         print("error2")
                         break
-            # read or compose
-            if message.startswith("READ"):
-
-                if len(messages[currentUser]) > 0 :
-                    response = messages[currentUser].pop()
-                    msg = response['message']
-                    client.send(msg.encode('ascii'))
-                else:
-                    msg = "no more message"
-                    client.send(msg.encode('ascii'))
-                continue        
-
-            if not receiving:
-                if not message.startswith("COMPOSE"):
-                    print("error3")
-                    break
-                else:
-                    if len(message.split()) == 2:
-                        toUser = message.split()[1]
-                        receiving = True
-                        continue
-                    else:
-                        print("error4")
-                        break
-            else: # receiving
-                messages[toUser].append({'from': currentUser, 'message': message})
-                receiving = False
             
 
-            response = f"Server received your message: {message}"
-            client.send(response.encode('ascii'))
+            #response = f"Server received your message: {message}"
+            #client.send(response.encode('ascii'))
 
         except Exception as e:
             print(f"Error with {address}: {e}")

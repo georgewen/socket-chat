@@ -48,9 +48,16 @@ if __name__ == '__main__':
 
                 elif message.startswith("READ"):
                     pass
-                elif message.startswith("EXIT"):
+                elif message == "EXIT":
+                    print("EXIT")
+                    client_socket.send(message.encode('ascii'))
                     break
                 else:
                     print("error command")
                     break
                 client_socket.send(message.encode('ascii'))
+        print("Outside Loop")
+        client_socket.close()
+        thread.join()
+        
+
