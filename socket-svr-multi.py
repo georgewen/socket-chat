@@ -37,6 +37,8 @@ def handle_client(client, address):
                     if len(message.split()) == 2:
                         currentUser = message.split()[1]
                         loggedin = True
+                        msg = str(len(messages[currentUser]))
+                        client.send(msg.encode('ascii'))
                         continue
                     else:
                         print("error2")
@@ -51,7 +53,6 @@ def handle_client(client, address):
                 else:
                     msg = "no more message"
                     client.send(msg.encode('ascii'))
-
                 continue        
 
             if not receiving:
@@ -68,6 +69,7 @@ def handle_client(client, address):
                         break
             else: # receiving
                 messages[toUser].append({'from': currentUser, 'message': message})
+                receiving = False
             
 
             response = f"Server received your message: {message}"
