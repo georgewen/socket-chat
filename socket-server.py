@@ -63,9 +63,6 @@ def handle_client(client, address):
                         print("error2")
                         break
 
-            #response = f"Server received your message: {message}"
-            #client.send(response.encode('ascii'))
-
         except Exception as e:
             print(f"Error with {address}: {e}")
             break
@@ -76,7 +73,15 @@ def handle_client(client, address):
 def main(port):
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
-        server_socket.bind((HOST, port))
+
+        try:
+            server_socket.bind((HOST, port))
+        except socket.error as exception:
+            print('Bind failed. Error Code : '
+                + str(exception[0]) + ' Message '
+                + exception[1])
+            sys.exit()            
+
         server_socket.listen()
         print(f"Server listening on {HOST}:{port}")
 
@@ -90,5 +95,8 @@ def main(port):
 
 if __name__ == '__main__':
     args = sys.argv[1:]
-    print(args[0])
-    main(int(args[0]))
+    if len(args) == 1 and args[0].isdigit(): 
+        main(int(args[0]))
+    else:
+        print("only port number is allowed as parameter!")
+

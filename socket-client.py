@@ -16,7 +16,10 @@ def receive_messages(client):
 def main(host, port):
     username = input("Please enter your username: ")
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
-        client_socket.connect((host, port))
+        try:
+            client_socket.connect((host, port))
+        except:
+            print("error connecting to server") 
         # send LOGIN command
         message = f'LOGIN {username}'
         client_socket.send(message.encode('ascii'))
@@ -59,7 +62,10 @@ def main(host, port):
 if __name__ == '__main__':
 
     args = sys.argv[1:]
-    print(args[0])
-    main(args[0], int(args[1]))
+    if len(args) == 2 and args[1].isdigit(): 
+        main(args[0], int(args[1]))
+    else:
+        print("Please supply host address and port number as parameters!")    
+
         
 
