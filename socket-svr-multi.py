@@ -1,14 +1,13 @@
 import socket
 import threading
 from collections import defaultdict
+import sys
 
 # Server IP and port
 HOST = '127.0.0.1'
-PORT = 12345
-
+#PORT = 12345
 # store messages for users
 messages = defaultdict(list)
-
 
 # Handle communication with the client
 def handle_client(client, address):
@@ -47,7 +46,7 @@ def handle_client(client, address):
                     if message.startswith("READ"):
                         if len(messages[currentUser]) > 0 :
                             response = messages[currentUser].pop()
-                            user = response['from'] + "\n"
+                            user = response['from'] #+ "\n"
                             client.send(user.encode('ascii'))
                             msg = response['message']
                             client.send(msg.encode('ascii'))
@@ -63,7 +62,6 @@ def handle_client(client, address):
                     else:
                         print("error2")
                         break
-            
 
             #response = f"Server received your message: {message}"
             #client.send(response.encode('ascii'))
@@ -75,19 +73,22 @@ def handle_client(client, address):
     print(f"Connection closed with {address}")
     client.close()
 
-if __name__ == '__main__':
-
+def main(port):
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
-        server_socket.bind((HOST, PORT))
+        server_socket.bind((HOST, port))
         server_socket.listen()
-        print(f"Server listening on {HOST}:{PORT}")
+        print(f"Server listening on {HOST}:{port}")
 
         while True:
             client, address = server_socket.accept()
 
             #print ('Got connection from', address )
             #client.send('Thank you for connecting'.encode()) 
-
             thread = threading.Thread(target=handle_client, args=(client, address))
             thread.start()
+
+if __name__ == '__main__':
+    args = sys.argv[1:]
+    print(args[0])
+    main(int(args[0]))

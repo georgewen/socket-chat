@@ -1,9 +1,6 @@
 import socket
 import threading
-
-# Server IP and port to connect to
-HOST = '127.0.0.1'
-PORT = 12345
+import sys
 
 # Function to receive messages from the server
 def receive_messages(client):
@@ -16,12 +13,10 @@ def receive_messages(client):
             client.close()
             break
 
-# Main function to connect to the server and send messages
-if __name__ == '__main__':
-
+def main(host, port):
     username = input("Please enter your username: ")
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
-        client_socket.connect((HOST, PORT))
+        client_socket.connect((host, port))
         # send LOGIN command
         message = f'LOGIN {username}'
         client_socket.send(message.encode('ascii'))
@@ -44,7 +39,7 @@ if __name__ == '__main__':
                     else:
                         # error
                         print("error: correct message format is COMPOSE <username>")
-                        break
+                        continue
 
                 elif message.startswith("READ"):
                     pass
@@ -54,10 +49,17 @@ if __name__ == '__main__':
                     break
                 else:
                     print("error command")
-                    break
+                    continue
                 client_socket.send(message.encode('ascii'))
         print("Outside Loop")
         client_socket.close()
         thread.join()
+
+# Main function to connect to the server and send messages
+if __name__ == '__main__':
+
+    args = sys.argv[1:]
+    print(args[0])
+    main(args[0], int(args[1]))
         
 
