@@ -88,7 +88,7 @@ int countMessages(char* key) {
 //end of data structure
 
 #define MAX_CLIENTS 10
-#define BUFFER_SIZE 2048
+#define BUFFER_SIZE 256
 #define PORT 8888
 
 int clientSockets[MAX_CLIENTS];
@@ -110,37 +110,50 @@ void sendMessageToAllClients(char *msg, int sender) {
 
 // Thread function to handle communication with a client
 void *handleClient(void *arg) {
-    int sock = *((int *)arg);
+    int client_socket = *((int *)arg);
     char buffer[BUFFER_SIZE];
     int readSize;
 
-    // Receive messages from client
-    while ((readSize = recv(sock, buffer, BUFFER_SIZE, 0)) > 0) {
-        buffer[readSize] = '\0';
-        sendMessageToAllClients(buffer, sock);
-        memset(buffer, 0, BUFFER_SIZE);
-    }
-
-    if (readSize == 0 || readSize == -1) {
-        close(sock);
-        // Remove client from the array
-        pthread_mutex_lock(&clients_mutex);
-        for (int i = 0; i < MAX_CLIENTS; ++i) {
-            if (clientSockets[i] == sock) {
-                clientSockets[i] = 0;
-                break;
-            }
+    while (1) {
+        readSize = recv(client_socket, buffer, BUFFER_SIZE, 0);
+        if (readSize == 0){
+            printf("exiting...");
+            close(client_socket);
+            break;
+        } else {
+            buffer[readSize] = '\0'; // Null-terminate the received message
+            printf("message received: %s", buffer);
         }
-        pthread_mutex_unlock(&clients_mutex);
+        memset(buffer, 0, BUFFER_SIZE); // Clear the buffer for the next message
     }
+    // // Receive messages from client
+    // while ((readSize = recv(client_socket, buffer, BUFFER_SIZE, 0)) > 0) {
+    //     buffer[readSize] = '\0';
+    //     //sendMessageToAllClients(buffer, client_socket);
+    //     printf("message received: %s", buffer);
+    //     memset(buffer, 0, BUFFER_SIZE);
+    // }
+
+    // if (readSize == 0 || readSize == -1) {
+    //     close(client_socket);
+    //     // Remove client from the array
+    //     pthread_mutex_lock(&clients_mutex);
+    //     for (int i = 0; i < MAX_CLIENTS; ++i) {
+    //         if (clientSockets[i] == client_socket) {
+    //             clientSockets[i] = 0;
+    //             break;
+    //         }
+    //     }
+    //     pthread_mutex_unlock(&clients_mutex);
+    // }
 
     free(arg);
     pthread_exit(NULL);
 }
 
 int main() {
-    int serverSocket, *newSock;
-    struct sockaddr_in serverAddr, clientAddr;
+    int serverSocket, *clientSocket;
+    struct sockaddr_in server_addr, clientAddr;
     pthread_t tid;
 
     // Initialize all client sockets to 0
@@ -157,12 +170,12 @@ int main() {
     printf("Socket created\n");
 
     // Prepare the sockaddr_in structure
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_addr.s_addr = INADDR_ANY;
-    serverAddr.sin_port = htons(PORT);
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(PORT);
 
     // Bind
-    if (bind(serverSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) {
+    if (bind(serverSocket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
         perror("Bind failed");
         return 1;
     }
@@ -173,26 +186,26 @@ int main() {
 
     printf("Waiting for incoming connections...\n");
     int c = sizeof(struct sockaddr_in);
-    while ((newSock = malloc(sizeof(int)), *newSock = accept(serverSocket, (struct sockaddr *)&clientAddr, (socklen_t*)&c))) {
+    while ((clientSocket = malloc(sizeof(int)), *clientSocket = accept(serverSocket, (struct sockaddr *)&clientAddr, (socklen_t*)&c))) {
         printf("Connection accepted\n");
 
         // Add client socket to array
         pthread_mutex_lock(&clients_mutex);
         for (int i = 0; i < MAX_CLIENTS; i++) {
             if (clientSockets[i] == 0) {
-                clientSockets[i] = *newSock;
+                clientSockets[i] = *clientSocket;
                 break;
             }
         }
         pthread_mutex_unlock(&clients_mutex);
 
-        if (pthread_create(&tid, NULL, handleClient, (void*)newSock) < 0) {
+        if (pthread_create(&tid, NULL, handleClient, (void*)clientSocket) < 0) {
             perror("Could not create thread");
             return 1;
         }
     }
 
-    if (newSock < 0) {
+    if (clientSocket < 0) {
         perror("Accept failed");
         return 1;
     }
