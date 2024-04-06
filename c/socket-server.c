@@ -116,6 +116,7 @@ void *handleClient(void *arg) {
 
     while (1) {
         readSize = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
         if (readSize == 0){
             printf("exiting...");
             close(client_socket);
@@ -123,6 +124,11 @@ void *handleClient(void *arg) {
         } else {
             buffer[readSize] = '\0'; // Null-terminate the received message
             printf("message received: %s", buffer);
+            if (strncmp(buffer, "EXIT", 4) == 0) 
+            {
+                close(client_socket);
+                break;
+            }
         }
         memset(buffer, 0, BUFFER_SIZE); // Clear the buffer for the next message
     }

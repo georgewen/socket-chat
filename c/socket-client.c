@@ -65,30 +65,20 @@ int main() {
         return 1;
     }
 
-    // Send messages
-    // while(fgets(message, 2048, stdin) > 0) {
-    //     send(sockfd, message, strlen(message), 0);
-    // }
-
-
     int sending = 0;
-    while (1) {
-        //printf("> ");
-        bzero(message,256);
-        fgets(message, 255, stdin);
-        //printf("msg: %zu \n", strlen(message));
-        //printf("char: %d %c \n",message[0], message[0]);
+    //Send messages
+    while(fgets(message, 255, stdin) > 0) {
 
-        if (message[0] == '\0') continue;
-        //printf("message 1: %s \n", message);
-        message[strcspn(message, "\n")] = '\0';
 
+        //send(sockfd, message, strlen(message), 0);
+
+        //if (message[0] == '\0') continue;
+        //message[strcspn(message, "\n")] = '\0';
         if (sending) {
             printf("sending message \n");
             send(sockfd, message, strlen(message), 0);
             sending = 0;
         } else if (strncmp(message, "COMPOSE", 7) == 0) {
-            //printf("message 2: %s", message);
             char* username = strchr(message, ' ');
             //printf("username: %s", username);
             if (username == NULL || strlen(username + 1) == 0) {
@@ -98,8 +88,8 @@ int main() {
                 printf("set sending = 1 \n");
             }
         } else if (strncmp(message, "READ", 4) == 0) {
-            // Implement READ functionality
-        } else if (strcmp(message, "EXIT") == 0) {
+            send(sockfd, message, strlen(message), 0);
+        } else if (strncmp(message, "EXIT", 4) == 0) {
             printf("Client Exiting \n");
             send(sockfd, message, strlen(message), 0);
             break;
@@ -107,7 +97,46 @@ int main() {
             printf("error command\n");
         }
 
-    }    
+    }
+
+
+    // int sending = 0;
+    // while (1) {
+    //     //printf("> ");
+    //     bzero(message,256);
+    //     fgets(message, 255, stdin);
+    //     //printf("msg: %zu \n", strlen(message));
+    //     //printf("char: %d %c \n",message[0], message[0]);
+
+    //     if (message[0] == '\0') continue;
+    //     //printf("message 1: %s \n", message);
+    //     message[strcspn(message, "\n")] = '\0';
+
+    //     if (sending) {
+    //         printf("sending message \n");
+    //         send(sockfd, message, strlen(message), 0);
+    //         sending = 0;
+    //     } else if (strncmp(message, "COMPOSE", 7) == 0) {
+    //         //printf("message 2: %s", message);
+    //         char* username = strchr(message, ' ');
+    //         //printf("username: %s", username);
+    //         if (username == NULL || strlen(username + 1) == 0) {
+    //             printf("error: correct message format is COMPOSE <username>\n");
+    //         } else {
+    //             sending = 1;
+    //             printf("set sending = 1 \n");
+    //         }
+    //     } else if (strncmp(message, "READ", 4) == 0) {
+    //         // Implement READ functionality
+    //     } else if (strcmp(message, "EXIT") == 0) {
+    //         printf("Client Exiting \n");
+    //         send(sockfd, message, strlen(message), 0);
+    //         break;
+    //     } else {
+    //         printf("error command\n");
+    //     }
+
+    // }    
     printf("closing down");
     close(sockfd);
     pthread_join(recvThread, NULL);
