@@ -115,6 +115,7 @@ void *handleClient(void *arg) {
     int readSize;
 
     while (1) {
+
         readSize = recv(client_socket, buffer, BUFFER_SIZE, 0);
 
         if (readSize == 0){
@@ -123,10 +124,15 @@ void *handleClient(void *arg) {
             break;
         } else {
             buffer[readSize] = '\0'; // Null-terminate the received message
-            printf("message received: %s", buffer);
-            if (strncmp(buffer, "EXIT", 4) == 0) 
+            printf("message received: %s, %d \n", buffer, readSize);
+
+            for (int i = 0; i < readSize; i++) {
+                printf("%c - %02x \n", buffer[i],  (unsigned char)buffer[i]);
+            }
+
+            if (strncmp(buffer, "EXIT", 4) == 0)
             {
-                close(client_socket);
+                printf("Exiting...");
                 break;
             }
         }
@@ -153,6 +159,8 @@ void *handleClient(void *arg) {
     //     pthread_mutex_unlock(&clients_mutex);
     // }
 
+    printf("exiting thread...");
+    close(client_socket);
     free(arg);
     pthread_exit(NULL);
 }

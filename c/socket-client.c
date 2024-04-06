@@ -69,7 +69,6 @@ int main() {
     //Send messages
     while(fgets(message, 255, stdin) > 0) {
 
-
         //send(sockfd, message, strlen(message), 0);
 
         //if (message[0] == '\0') continue;
