@@ -1,0 +1,1 @@
+java ChatServer $1

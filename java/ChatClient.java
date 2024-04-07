@@ -51,16 +51,20 @@ public class ChatClient {
                 } else {
                     if (message.startsWith("COMPOSE")) {
                         if (message.split(" ").length == 2) {
+                            sendMessage(message);
                             sending = true;
                         } else {
                             System.out.println("Error: correct message format is COMPOSE <username>");
-                            continue;
+                            //continue;
                         }
+                    } else if (message.equals("READ")) {
+                        sendMessage(message);                    
                     } else if (message.equals("EXIT")) {
                         sendMessage(message);
                         break;
+                    } else {
+                        System.out.println("Error: unrecognized command");
                     }
-                    sendMessage(message);
                 }
             }
         } catch (IOException e) {

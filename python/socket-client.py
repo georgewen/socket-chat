@@ -38,22 +38,21 @@ def main(host, port):
             else:
                 if message.startswith("COMPOSE"):
                     if len(message.split()) == 2:
+                        client_socket.send(message.encode('ascii'))
                         sending = True
                     else:
                         # error
                         print("error: correct message format is COMPOSE <username>")
-                        continue
-
+                        #continue
                 elif message.startswith("READ"):
-                    pass
-                elif message == "EXIT":
+                        client_socket.send(message.encode('ascii'))
+                elif message.startswith("EXIT"):
                     print("EXIT")
                     client_socket.send(message.encode('ascii'))
                     break
                 else:
                     print("error command")
                     continue
-                client_socket.send(message.encode('ascii'))
         print("Outside Loop")
         client_socket.close()
         thread.join()
