@@ -5,8 +5,11 @@
 #include <pthread.h>
 #include <netinet/in.h>
 
+// Author: george wen
+// c implentation for a multi clients socket chat program
 
-// below are data structure used
+
+// below are data structure used, this is the implementation of a dictionary with a queue as the value item.
 typedef struct Message {
     char* from;
     char* text;
@@ -91,26 +94,9 @@ int countMessages(char* key) {
 }
 //end of data structure
 
-#define MAX_CLIENTS 10
 #define BUFFER_SIZE 256
-#define PORT 8888
-
-int clientSockets[MAX_CLIENTS];
 pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-// Function to send message to all clients except the sender
-void sendMessageToAllClients(char *msg, int sender) {
-    pthread_mutex_lock(&clients_mutex);
-    for (int i = 0; i < MAX_CLIENTS; ++i) {
-        if (clientSockets[i] != 0 && clientSockets[i] != sender) {
-            if (write(clientSockets[i], msg, strlen(msg)) < 0) {
-                perror("Failed to send message");
-                break;
-            }
-        }
-    }
-    pthread_mutex_unlock(&clients_mutex);
-}
 
 // Thread function to handle communication with a client
 void *handleClient(void *arg) {
@@ -151,18 +137,22 @@ void *handleClient(void *arg) {
             if (receiving) {
                 // Here you would store the received message for the user `toUser`
                 char* response = "MESSAGE SENT\n";
+                pthread_mutex_lock(&clients_mutex);
                 insertMessage(toUser, currentUser, buffer);
+                pthread_mutex_unlock(&clients_mutex);
                 send(client_socket, response, strlen(response), 0);
                 receiving = 0;
             } else {
 
                 if (strncmp(buffer, "READ", 4) == 0) {
-                    // Here you would pop and send the last message for currentUser
-                    // Placeholder for message reading logic
+                    // Here you would pop and send message for currentUser
                     int messageCount = countMessages(currentUser);
                     char* response;
                     if (messageCount > 0) {
+                        pthread_mutex_lock(&clients_mutex);
                         Message* msg =  popMessage(currentUser);
+                        pthread_mutex_unlock(&clients_mutex);
+
                         char* from = msg->from ;
                         char* text = msg->text ;
                         strcat(from, "\n");
@@ -176,16 +166,13 @@ void *handleClient(void *arg) {
                         send(client_socket, response, strlen(response), 0);
                     }
                 } else if (strncmp(buffer, "COMPOSE", 7) == 0) {
-                    //printf("receiving... \n");
                     sscanf(buffer, "COMPOSE %s", toUser);
                     receiving = 1;
                 } else if (strncmp(buffer, "EXIT", 4) == 0) {
-                    //printf("Exiting...\n");
-                    //send(client_socket, exitMsg, strlen(exitMsg), 0);
+                    // exit
                     break;
                 } else {
-                    char* unknownCmdMsg = "Unknown command\n";
-                    //send(client_socket, unknownCmdMsg, strlen(unknownCmdMsg), 0);
+                    // invalid command, exit
                     break;
                 }
             }
@@ -195,7 +182,6 @@ void *handleClient(void *arg) {
 
     printf("exiting thread...");
     close(client_socket);
-    //free(arg);
     //pthread_exit(NULL);
 }
 
@@ -211,11 +197,6 @@ int main(int argc, char *argv[]) {
     int serverSocket, *clientSocket;
     struct sockaddr_in server_addr, clientAddr;
     pthread_t tid;
-
-    // Initialize all client sockets to 0
-    for (int i = 0; i < MAX_CLIENTS; ++i) {
-        clientSockets[i] = 0;
-    }
 
     // Create socket
     serverSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -245,14 +226,7 @@ int main(int argc, char *argv[]) {
     while ((clientSocket = malloc(sizeof(int)), *clientSocket = accept(serverSocket, (struct sockaddr *)&clientAddr, (socklen_t*)&c))) {
         printf("Connection accepted\n");
 
-        // Add client socket to array
-        pthread_mutex_lock(&clients_mutex);
-        for (int i = 0; i < MAX_CLIENTS; i++) {
-            if (clientSockets[i] == 0) {
-                clientSockets[i] = *clientSocket;
-                break;
-            }
-        }
+
         pthread_mutex_unlock(&clients_mutex);
 
         if (pthread_create(&tid, NULL, handleClient, (void*)clientSocket) < 0) {

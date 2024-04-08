@@ -1,0 +1,12 @@
+To Start Server: 
+./startServer.sh 12345
+
+To Start Client:
+./startClient 127.0.0.1 12345
+
+Supported Commands:
+
+    LOGIN <USERNAME>
+    COMPOSE <USERNAME>
+    READ
+    EXIT
