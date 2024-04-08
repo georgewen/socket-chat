@@ -30,38 +30,38 @@ def handle_client(client, address):
             if currentUser is None:
                 if  message.startswith("LOGIN") and len(message.split()) == 2:
                     currentUser = message.split()[1]
-                    msg = str(len(messages[currentUser]))
+                    msg = str(len(messages[currentUser])) + '\n'
                     client.send(msg.encode('ascii'))
                 else:
-                    print("error1")
-                    break   
+                    print("Please issue LOGIN command first")
+                       
             else:
                 if receiving:
                     messages[toUser].append({'from': currentUser, 'message': message})
                     receiving = False
-                    response = "MESSAGE SENT"
+                    response = "MESSAGE SENT\n"
                     client.send(response.encode('ascii'))
                 else:
-                    # READ or COMPOSE
+                    # READ or COMPOSE or EXIT
                     if message.startswith("READ"):
                         if len(messages[currentUser]) > 0 :
                             response = messages[currentUser].pop()
-                            user = response['from'] #+ "\n"
+                            user = response['from'] + "\n"
                             client.send(user.encode('ascii'))
-                            msg = response['message']
+                            msg = response['message'] + '\n'
                             client.send(msg.encode('ascii'))
                         else:
-                            msg = "READ ERROR"
+                            msg = "READ ERROR\n"
                             client.send(msg.encode('ascii'))                        
                     elif message.startswith("COMPOSE") and len(message.split()) == 2:
                         toUser = message.split()[1]
                         receiving = True
                     elif message == "EXIT":
-                        print("Exit")
+                        client.send("Exiting...".encode('ascii'))
                         break                   
                     else:
-                        print("error2")
-                        break
+                        client.send("Unknow command".encode('ascii'))
+                        
 
         except Exception as e:
             print(f"Error with {address}: {e}")

@@ -24,7 +24,14 @@ void *receiveMessage(void *socket) {
     }
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+    if (argc != 3) {
+        printf("Usage: %s <server IP> <port>\n", argv[0]);
+        return 1;
+    }
+    char* host = argv[1];
+    int port = atoi(argv[2]);
+
     struct sockaddr_in server_addr;
     int sockfd, read_size;
     char username[50];
@@ -35,13 +42,13 @@ int main() {
     // Create socket
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) {
-        printf("Could not create socket");
+        printf("Could not create socket \n");
     }
     printf("Socket created\n");
     
-    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    server_addr.sin_addr.s_addr = inet_addr(host);
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(PORT);
+    server_addr.sin_port = htons(port);
 
     // Connect to remote server
     if (connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
@@ -69,75 +76,34 @@ int main() {
     //Send messages
     while(fgets(message, 255, stdin) > 0) {
 
-        send(sockfd, message, strlen(message), 0);
-
-        //if (message[0] == '\0') continue;
-        //message[strcspn(message, "\n")] = '\0';
-        // if (sending) {
-        //     printf("sending message \n");
-        //     send(sockfd, message, strlen(message), 0);
-        //     sending = 0;
-        // } else if (strncmp(message, "COMPOSE", 7) == 0) {
-        //     char* username = strchr(message, ' ');
-        //     //printf("username: %s", username);
-        //     if (username == NULL || strlen(username + 1) == 0) {
-        //         printf("error: correct message format is COMPOSE <username>\n");
-        //     } else {
-        //         sending = 1;
-        //         printf("set sending = 1 \n");
-        //     }
-        // } else if (strncmp(message, "READ", 4) == 0) {
-        //     send(sockfd, message, strlen(message), 0);
-        // } else if (strncmp(message, "EXIT", 4) == 0) {
-        //     printf("Client Exiting \n");
-        //     send(sockfd, message, strlen(message), 0);
-        //     break;
-        // } else {
-        //     printf("error command\n");
-        // }
+        if (message[0] == '\0') continue;
+        message[strcspn(message, "\n")] = '\0';
+        if (sending) {
+            send(sockfd, message, strlen(message), 0);
+            sending = 0;
+        } else if (strncmp(message, "COMPOSE", 7) == 0) {
+            char* username = strchr(message, ' ');
+            if (username == NULL || strlen(username + 1) == 0) {
+                printf("error: correct message format is COMPOSE <username>\n");
+            } else {
+                send(sockfd, message, strlen(message), 0);
+                sending = 1;
+            }
+        } else if (strncmp(message, "READ", 4) == 0) {
+            send(sockfd, message, strlen(message), 0);
+        } else if (strncmp(message, "EXIT", 4) == 0) {
+            printf("Client Exiting \n");
+            send(sockfd, message, strlen(message), 0);
+            break;
+        } else {
+            printf("error command\n");
+        }
 
     }
-
-
-    // int sending = 0;
-    // while (1) {
-    //     //printf("> ");
-    //     bzero(message,256);
-    //     fgets(message, 255, stdin);
-    //     //printf("msg: %zu \n", strlen(message));
-    //     //printf("char: %d %c \n",message[0], message[0]);
-
-    //     if (message[0] == '\0') continue;
-    //     //printf("message 1: %s \n", message);
-    //     message[strcspn(message, "\n")] = '\0';
-
-    //     if (sending) {
-    //         printf("sending message \n");
-    //         send(sockfd, message, strlen(message), 0);
-    //         sending = 0;
-    //     } else if (strncmp(message, "COMPOSE", 7) == 0) {
-    //         //printf("message 2: %s", message);
-    //         char* username = strchr(message, ' ');
-    //         //printf("username: %s", username);
-    //         if (username == NULL || strlen(username + 1) == 0) {
-    //             printf("error: correct message format is COMPOSE <username>\n");
-    //         } else {
-    //             sending = 1;
-    //             printf("set sending = 1 \n");
-    //         }
-    //     } else if (strncmp(message, "READ", 4) == 0) {
-    //         // Implement READ functionality
-    //     } else if (strcmp(message, "EXIT") == 0) {
-    //         printf("Client Exiting \n");
-    //         send(sockfd, message, strlen(message), 0);
-    //         break;
-    //     } else {
-    //         printf("error command\n");
-    //     }
-
-    // }    
-    printf("closing down");
+ 
+    printf("closing down\n");
     close(sockfd);
-    pthread_join(recvThread, NULL);
+    //pthread_join(recvThread, NULL);
+    //pthread_exit(NULL);
     return 0;
 }

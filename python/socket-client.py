@@ -21,7 +21,7 @@ def main(host, port):
         except:
             print("error connecting to server") 
         # send LOGIN command
-        message = f'LOGIN {username}'
+        message = f'LOGIN {username}\n'
         client_socket.send(message.encode('ascii'))
 
         thread = threading.Thread(target=receive_messages, args=(client_socket,))
@@ -33,22 +33,22 @@ def main(host, port):
             # message should be COMPOSE <username> => message, READ, EXIT
             if sending:
                 # input is message content
-                client_socket.send(message.encode('ascii'))
+                client_socket.send((message+'\n').encode('ascii'))
                 sending = False
             else:
                 if message.startswith("COMPOSE"):
                     if len(message.split()) == 2:
-                        client_socket.send(message.encode('ascii'))
+                        client_socket.send((message+'\n').encode('ascii'))
                         sending = True
                     else:
                         # error
                         print("error: correct message format is COMPOSE <username>")
                         #continue
                 elif message.startswith("READ"):
-                        client_socket.send(message.encode('ascii'))
+                        client_socket.send((message+'\n').encode('ascii'))
                 elif message.startswith("EXIT"):
                     print("EXIT")
-                    client_socket.send(message.encode('ascii'))
+                    client_socket.send((message+'\n').encode('ascii'))
                     break
                 else:
                     print("error command")

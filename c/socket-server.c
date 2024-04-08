@@ -8,6 +8,7 @@
 
 // below are data structure used
 typedef struct Message {
+    char* from;
     char* text;
     struct Message* next;
 } Message;
@@ -20,14 +21,15 @@ typedef struct DictionaryEntry {
 
 DictionaryEntry* dictionary = NULL;
 
-void insertMessage(char* key, char* message) {
+void insertMessage(char* key, char* from, char* text) {
     // Check if the key already exists in the dictionary
     DictionaryEntry* current = dictionary;
     while (current != NULL) {
         if (strcmp(current->key, key) == 0) {
             // Create a new message and add it to the list
             Message* newMessage = (Message*)malloc(sizeof(Message));
-            newMessage->text = strdup(message);
+            newMessage->from = strdup(from);
+            newMessage->text = strdup(text);
             newMessage->next = current->messages;
             current->messages = newMessage;
             return;
@@ -44,21 +46,23 @@ void insertMessage(char* key, char* message) {
     
     // Create a new message and add it to the list
     Message* newMessage = (Message*)malloc(sizeof(Message));
-    newMessage->text = strdup(message);
+    newMessage->from = strdup(from);
+    newMessage->text = strdup(text);
     newMessage->next = newEntry->messages;
     newEntry->messages = newMessage;
 }
 
-char* popMessage(char* key) {
+Message* popMessage(char* key) {
     DictionaryEntry* current = dictionary;
     while (current != NULL) {
         if (strcmp(current->key, key) == 0) {
             // Get the first message, store its text, and remove it from the list
             Message* firstMessage = current->messages;
-            char* messageText = strdup(firstMessage->text);
+            // char* messageText = strdup(firstMessage->text);
             current->messages = firstMessage->next;
-            free(firstMessage);
-            return messageText;
+            // free(firstMessage);
+            // return messageText;
+            return firstMessage;
         }
         current = current->next;
     }
@@ -114,63 +118,95 @@ void *handleClient(void *arg) {
     char buffer[BUFFER_SIZE];
     int readSize;
 
+    char currentUser[50] = {0}; // Store the current user
+    int receiving = 0; // Flag to indicate if the server is receiving a message to store
+    char toUser[50] = {0}; // Store the recipient user for messages
+
     while (1) {
 
+        memset(buffer, 0, BUFFER_SIZE); // Clear the buffer for the next message
         readSize = recv(client_socket, buffer, BUFFER_SIZE, 0);
 
-        if (readSize == 0){
+        if (readSize <= 0){
             printf("exiting...");
             close(client_socket);
             break;
-        } else {
+        } 
 
-            printf("message received: %s, %d \n", buffer, readSize);
+        printf("message received: %s \n", buffer);
 
-            //buffer[readSize-1] = '\0'; // Null-terminate the received message
+        // Process commands
+        if (strlen(currentUser) == 0) { // If not logged in
+            if (strncmp(buffer, "LOGIN", 5) == 0) {
+                sscanf(buffer, "LOGIN %s", currentUser);
+                int messageCount = countMessages(currentUser);
 
-            for (int i = 0; i < readSize; i++) {
-                printf("%c - %02x \n", buffer[i],  (unsigned char)buffer[i]);
+                char response[256];
+                sprintf(response, "%d Messages\n", messageCount); // Placeholder for actual message count
+                send(client_socket, response, strlen(response), 0);
+            } else {
+                printf("Please issue LOGIN command first\n");
             }
+        } else {
+            if (receiving) {
+                // Here you would store the received message for the user `toUser`
+                char* response = "MESSAGE SENT\n";
+                insertMessage(toUser, currentUser, buffer);
+                send(client_socket, response, strlen(response), 0);
+                receiving = 0;
+            } else {
 
-            int res = strncmp(buffer, "EXIT", 4);
-            printf("result: %d \n", res);
-            
-            if (res == 0)
-            {
-                printf("Exiting...");
-                //break;
+                if (strncmp(buffer, "READ", 4) == 0) {
+                    // Here you would pop and send the last message for currentUser
+                    // Placeholder for message reading logic
+                    int messageCount = countMessages(currentUser);
+                    char* response;
+                    if (messageCount > 0) {
+                        Message* msg =  popMessage(currentUser);
+                        char* from = msg->from ;
+                        char* text = msg->text ;
+                        strcat(from, "\n");
+                        strcat(text, "\n");
+                        send(client_socket, from, strlen(from), 0);
+                        send(client_socket, text, strlen(text), 0);
+                    }
+                    else
+                    {
+                        response = "READ ERROR";
+                        send(client_socket, response, strlen(response), 0);
+                    }
+                } else if (strncmp(buffer, "COMPOSE", 7) == 0) {
+                    //printf("receiving... \n");
+                    sscanf(buffer, "COMPOSE %s", toUser);
+                    receiving = 1;
+                } else if (strncmp(buffer, "EXIT", 4) == 0) {
+                    //printf("Exiting...\n");
+                    //send(client_socket, exitMsg, strlen(exitMsg), 0);
+                    break;
+                } else {
+                    char* unknownCmdMsg = "Unknown command\n";
+                    send(client_socket, unknownCmdMsg, strlen(unknownCmdMsg), 0);
+                }
             }
         }
-        //memset(buffer, 0, BUFFER_SIZE); // Clear the buffer for the next message
-    }
-    // // Receive messages from client
-    // while ((readSize = recv(client_socket, buffer, BUFFER_SIZE, 0)) > 0) {
-    //     buffer[readSize] = '\0';
-    //     //sendMessageToAllClients(buffer, client_socket);
-    //     printf("message received: %s", buffer);
-    //     memset(buffer, 0, BUFFER_SIZE);
-    // }
 
-    // if (readSize == 0 || readSize == -1) {
-    //     close(client_socket);
-    //     // Remove client from the array
-    //     pthread_mutex_lock(&clients_mutex);
-    //     for (int i = 0; i < MAX_CLIENTS; ++i) {
-    //         if (clientSockets[i] == client_socket) {
-    //             clientSockets[i] = 0;
-    //             break;
-    //         }
-    //     }
-    //     pthread_mutex_unlock(&clients_mutex);
-    // }
+    }
 
     printf("exiting thread...");
-    //close(client_socket);
+    close(client_socket);
     //free(arg);
     //pthread_exit(NULL);
 }
 
-int main() {
+  
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Usage: %s <port>\n", argv[0]);
+        return 1;
+    }
+    int port = atoi(argv[1]);
+
+
     int serverSocket, *clientSocket;
     struct sockaddr_in server_addr, clientAddr;
     pthread_t tid;
@@ -191,7 +227,7 @@ int main() {
     // Prepare the sockaddr_in structure
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port = htons(PORT);
+    server_addr.sin_port = htons(port);
 
     // Bind
     if (bind(serverSocket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
