@@ -56,7 +56,7 @@ def handle_client(client, address):
                     elif message.startswith("COMPOSE") and len(message.split()) == 2:
                         toUser = message.split()[1]
                         receiving = True
-                    elif message == "EXIT":
+                    elif message.startswith("EXIT"):
                         client.send("Exiting...".encode('ascii'))
                         break                   
                     else:
@@ -98,5 +98,5 @@ if __name__ == '__main__':
     if len(args) == 1 and args[0].isdigit(): 
         main(int(args[0]))
     else:
-        print("only port number is allowed as parameter!")
+        print("correct usage: startServer.sh <PORT>!")    
 

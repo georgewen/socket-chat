@@ -185,7 +185,8 @@ void *handleClient(void *arg) {
                     break;
                 } else {
                     char* unknownCmdMsg = "Unknown command\n";
-                    send(client_socket, unknownCmdMsg, strlen(unknownCmdMsg), 0);
+                    //send(client_socket, unknownCmdMsg, strlen(unknownCmdMsg), 0);
+                    break;
                 }
             }
         }

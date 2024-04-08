@@ -2,6 +2,7 @@ import socket
 import threading
 import sys
 
+
 # Function to receive messages from the server
 def receive_messages(client):
     while True:
@@ -30,6 +31,7 @@ def main(host, port):
         sending = False
         while True:
             message = input("")
+            #print("Client: ", message)
             # message should be COMPOSE <username> => message, READ, EXIT
             if sending:
                 # input is message content
@@ -41,19 +43,16 @@ def main(host, port):
                         client_socket.send((message+'\n').encode('ascii'))
                         sending = True
                     else:
-                        # error
                         print("error: correct message format is COMPOSE <username>")
-                        #continue
                 elif message.startswith("READ"):
                         client_socket.send((message+'\n').encode('ascii'))
                 elif message.startswith("EXIT"):
-                    print("EXIT")
-                    client_socket.send((message+'\n').encode('ascii'))
-                    break
+                        client_socket.send((message+'\n').encode('ascii'))
+                        break
                 else:
                     print("error command")
                     continue
-        print("Outside Loop")
+        #print("Exiting...")
         client_socket.close()
         thread.join()
 
@@ -64,7 +63,7 @@ if __name__ == '__main__':
     if len(args) == 2 and args[1].isdigit(): 
         main(args[0], int(args[1]))
     else:
-        print("Please supply host address and port number as parameters!")    
+        print("correct usage: startClient.sh <Server IP> <PORT>!")    
 
         
 
